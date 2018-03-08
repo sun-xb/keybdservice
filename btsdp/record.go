@@ -10,6 +10,45 @@ import (
 	"strings"
 )
 
+const (
+	SERVICE_RECORD_HANDLE_ATTRID             = 0x0000
+	SERVICE_CLASS_ID_LIST_ATTRID             = 0x0001
+	SERVICE_RECORD_STATE_ATTRID              = 0x0002
+	SERVICE_ID_ATTRID                        = 0x0003
+	PROTOCOL_DESCRIPTOR_LIST_ATTRID          = 0x0004
+	BROWSE_GROUP_LIST_ATTRID                 = 0x0005
+	LANGUAGE_BASE_ATTRID_LIST_ATTRID         = 0x0006
+	SERVICE_INFO_TIME_TO_LIVE_ATTRID         = 0x0007
+	SERVICE_AVAILABILITY_ATTRID              = 0x0008
+	BLUETOOTH_PROFILE_DESCRIPTOR_LIST_ATTRID = 0x0009
+	DOCUMENTATION_URL_ATTRID                 = 0x000a
+	CLIENT_EXECUTABLE_URL_ATTRID             = 0x000b
+	ICON_URL_ATTRID                          = 0x000c
+	ADD_PROTO_DESC_LIST_ATTRID               = 0x000d
+	SERVICE_NAME_ATTRID                      = 0x0100
+	SERVICE_DESCRIPTION_ATTRID               = 0x0101
+	PROVIDER_NAME_ATTRID                     = 0x0102
+
+	SDP_ATTR_HID_DEVICE_RELEASE_NUMBER = 0x0200
+	SDP_ATTR_HID_PARSER_VERSION        = 0x0201
+	SDP_ATTR_HID_DEVICE_SUBCLASS       = 0x0202
+	SDP_ATTR_HID_COUNTRY_CODE          = 0x0203
+	SDP_ATTR_HID_VIRTUAL_CABLE         = 0x0204
+	SDP_ATTR_HID_RECONNECT_INITIATE    = 0x0205
+	SDP_ATTR_HID_DESCRIPTOR_LIST       = 0x0206
+	SDP_ATTR_HID_LANG_ID_BASE_LIST     = 0x0207
+	SDP_ATTR_HID_SDP_DISABLE           = 0x0208
+	SDP_ATTR_HID_BATTERY_POWER         = 0x0209
+	SDP_ATTR_HID_REMOTE_WAKEUP         = 0x020a
+	SDP_ATTR_HID_PROFILE_VERSION       = 0x020b
+	SDP_ATTR_HID_SUPERVISION_TIMEOUT   = 0x020c
+	SDP_ATTR_HID_NORMALLY_CONNECTABLE  = 0x020d
+	SDP_ATTR_HID_BOOT_DEVICE           = 0x020e
+
+	HID_SVCLASS_ID = "1124"
+	HID_PROFILE_ID = HID_SVCLASS_ID
+)
+
 type SdpAttribute struct {
 	rw io.ReadWriter
 }
@@ -19,6 +58,14 @@ func NewSdpAttribute(id uint16, attrType string, attr interface{}) *SdpAttribute
 		rw: bytes.NewBufferString(""),
 	}
 	sa.writeDataElement("uint16", id)
+	sa.writeDataElement(attrType, attr)
+	return sa
+}
+
+func NewSdpElement(attrType string, attr interface{}) *SdpAttribute {
+	sa := &SdpAttribute{
+		rw: bytes.NewBufferString(""),
+	}
 	sa.writeDataElement(attrType, attr)
 	return sa
 }
@@ -158,7 +205,7 @@ func (r *SdpAttribute) writeDataElement(typeDesc string, value interface{}) {
 			binary.Write(r.rw, binary.BigEndian, byte(0))
 		}
 	case "sequence":
-		seq, ok := value.([]SdpAttribute)
+		seq, ok := value.([]*SdpAttribute)
 		if !ok {
 			panic("error sequence type.")
 		}
@@ -171,7 +218,7 @@ func (r *SdpAttribute) writeDataElement(typeDesc string, value interface{}) {
 		r.writeTypeSizeDescLong(6, len(packedseq))
 		binary.Write(r.rw, binary.BigEndian, packedseq)
 	case "alternative":
-		seq, ok := value.([]SdpAttribute)
+		seq, ok := value.([]*SdpAttribute)
 		if !ok {
 			panic("error sequence type.")
 		}
